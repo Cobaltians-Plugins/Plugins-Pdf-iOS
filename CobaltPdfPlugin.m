@@ -58,7 +58,7 @@
                     kAPITokenDetail];
 
         // parse dictionary
-        _filedata = [self parseDictionary:data];
+        _filedata = [[NSDictionary alloc] initWithDictionary:[self parseDictionary:data]];
         if (_filedata == NULL || _filedata.count == 0) {
             NSLog(@"Error while parsing file datas, check your javascript.");
             return;
@@ -148,7 +148,7 @@
             }
         }
     }
-    return dictionary;
+    return [NSDictionary dictionaryWithDictionary:dictionary];
 }
 
 @end
