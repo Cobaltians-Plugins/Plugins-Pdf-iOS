@@ -65,22 +65,24 @@
         }
         if (DEBUG_COBALT) NSLog(@"PdfPlugin input parsing done: %@", _filedata.description);
 
-        // // open Remote Pdf
+        // open Remote Pdf
         NSString *source = [_filedata objectForKey:kAPITokenSource];
         if ([source isEqualToString:kAPITokenRemote]) {
+            // get url
             NSURL *url = [NSURL URLWithString:[_filedata objectForKey:kAPITokenPath]];
-            if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_7_0) {
+            // check iOS version
+            if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"9.0")) {
                 SFSafariViewController *svc = [[SFSafariViewController alloc] initWithURL:url];
                 svc.delegate = self;
                 [viewController presentViewController:svc animated:YES completion:nil];
-            }
-            else {
-                // pdf opening for older versions than iOS 7
+            } else if (SYSTEM_VERSION_LESS_THAN_OR_EQUAL_TO(@"8.9")) { // version 0 to 8.9
                 [[UIApplication sharedApplication] openURL:url];
             }
-        } // open Local Pdf
-        else if ([source isEqualToString:kAPITokenLocal]) {
-            [self previewDocument:[_filedata objectForKey:kAPITokenPath]];
+        } else if ([source isEqualToString:kAPITokenLocal]) { // open Local Pdf
+            if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"3.2")) {
+                [self previewDocument:[_filedata objectForKey:kAPITokenPath]];
+            }
+            // can't open pdf
         }
         // send callback
         [viewController sendCallback: callback
