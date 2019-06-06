@@ -27,24 +27,17 @@
  */
 
 #import "CobaltPdfPlugin.h"
+#import <Cobalt/PubSub.h>
 
 @implementation CobaltPdfPlugin
 
-- (void) onMessageFromCobaltController: (CobaltViewController *)viewController
-                               andData: (NSDictionary *)data {
-    [self onMessageWithCobaltController:viewController andData:data];
-}
-
-- (void) onMessageFromWebLayerWithCobaltController: (CobaltViewController *)viewController
-                                           andData: (NSDictionary *)data {
-    [self onMessageWithCobaltController:viewController andData:data];
-}
-
-- (void) onMessageWithCobaltController: (CobaltViewController *)viewController
-                               andData: (NSDictionary *)data {
-    NSString * callback = [data objectForKey:kJSCallback];
-    NSString * action = [data objectForKey:kJSAction];
-    if (action != nil && [action isEqualToString:@"pdf"]) {
+- (void)onMessageFromWebView:(WebViewType)webView
+          inCobaltController:(nonnull CobaltViewController *)viewController
+                  withAction:(nonnull NSString *)action
+                        data:(nullable NSDictionary *)data
+          andCallbackChannel:(nullable NSString *)callbackChannel{
+    
+    if ([action isEqualToString:@"pdf"]) {
         if (DEBUG_COBALT) NSLog(@"PdfPlugin received data %@", data.description);
 
         // prepare data
@@ -57,10 +50,9 @@
                     kAPITokenTitle,
                     kAPITokenDetail];
 
-        // parse dictionary
-        _filedata = [[NSDictionary alloc] initWithDictionary:[self parseDictionary:data]];
+        _filedata = data;
         if (_filedata == NULL || _filedata.count == 0) {
-            NSLog(@"Error while parsing file datas, check your javascript.");
+            NSLog(@"Error while parsing pdf data, check your javascript.");
             return;
         }
         if (DEBUG_COBALT) NSLog(@"PdfPlugin input parsing done: %@", _filedata.description);
@@ -84,9 +76,9 @@
             }
             // can't open pdf
         }
-        // send callback
-        [viewController sendCallback: callback
-                            withData: nil];
+
+        [[PubSub sharedInstance] publishMessage:nil
+                                      toChannel:callbackChannel];
     }
 }
 
@@ -128,29 +120,6 @@
 }
 - (BOOL)documentInteractionController:(UIDocumentInteractionController *)controller   canPerformAction:(SEL)action{
     return FALSE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-#pragma mark TOOLS
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-// parse data from web and create _filedata
-- (NSDictionary *) parseDictionary: (NSDictionary *)data {
-    NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-    NSDictionary *fileDataDictionnary = [NSDictionary dictionaryWithDictionary:[data valueForKey:@"data"]];
-    if (fileDataDictionnary == NULL) return NULL;
-    for (NSString *aKey in [fileDataDictionnary allKeys]) {
-        NSString *aSubValue = [fileDataDictionnary objectForKey:aKey];
-        // get known tokens and put them into dictionary
-        for (NSString *item in _tokens) {
-            if ([aKey isEqualToString:item]) {
-                [dictionary setValue:aSubValue forKey:item];
-            }
-        }
-    }
-    return [NSDictionary dictionaryWithDictionary:dictionary];
 }
 
 @end
